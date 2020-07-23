@@ -59,6 +59,7 @@ from zerver.lib.cache import (
     realm_alert_words_cache_key,
     realm_user_dict_fields,
     realm_user_dicts_cache_key,
+    realm_filtered_user_dicts_cache_key,
     user_profile_by_api_key_cache_key,
     user_profile_by_email_cache_key,
     user_profile_by_id_cache_key,
@@ -2360,6 +2361,12 @@ def get_user_by_id_in_realm_including_cross_realm(
 
 @cache_with_key(realm_user_dicts_cache_key, timeout=3600*24*7)
 def get_realm_user_dicts(realm_id: int) -> List[Dict[str, Any]]:
+    return UserProfile.objects.filter(
+        realm_id=realm_id,
+    ).values(*realm_user_dict_fields)
+
+@cache_with_key(realm_filtered_user_dicts_cache_key, timeout=3600*24*7)
+def get_realm_filtered_user_dicts(realm_id: int) -> List[Dict[str, Any]]:
     return UserProfile.buddy_objects.filter(
         realm_id=realm_id,
     ).values(*realm_user_dict_fields)

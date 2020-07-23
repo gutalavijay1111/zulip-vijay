@@ -26,6 +26,7 @@ from zerver.models import (
     Service,
     UserProfile,
     get_realm_user_dicts,
+    get_realm_filtered_user_dicts,
     get_user_profile_by_id_in_realm,
 )
 
@@ -307,6 +308,75 @@ def compute_show_invites_and_add_streams(user_profile: Optional[UserProfile]) ->
 
     return True, True
 
+def format_filtered_user_row(realm: Realm, acting_user: UserProfile, row: Dict[str, Any],
+                    client_gravatar: bool, user_avatar_url_field_optional: bool,
+                    custom_profile_field_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Formats a user row returned by a database fetch using
+    .values(*realm_user_dict_fields) into a dictionary representation
+    of that user for API delivery to clients.  The acting_user
+    argument is used for permissions checks.
+    """
+
+    is_admin = is_administrator_role(row['role'])
+    is_owner = row['role'] == UserProfile.ROLE_REALM_OWNER
+    is_guest = row['role'] == UserProfile.ROLE_GUEST
+    is_bot = row['is_bot']
+    result = dict(
+        email=row['email'],
+        user_id=row['id'],
+        avatar_version=row['avatar_version'],
+        is_admin=is_admin,
+        is_owner=is_owner,
+        is_guest=is_guest,
+        is_bot=is_bot,
+        full_name=row['full_name'],
+        timezone=row['timezone'],
+        is_active = row['is_active'],
+        date_joined = row['date_joined'].isoformat(),
+    )
+
+    # Zulip clients that support using `GET /avatar/{user_id}` as a
+    # fallback if we didn't send an avatar URL in the user object pass
+    # user_avatar_url_field_optional in client_capabilities.
+    #
+    # This is a major network performance optimization for
+    # organizations with 10,000s of users where we would otherwise
+    # send avatar URLs in the payload (either because most users have
+    # uploaded avatars or because EMAIL_ADDRESS_VISIBILITY_ADMINS
+    # prevents the older client_gravatar optimization from helping).
+    # The performance impact is large largely because the hashes in
+    # avatar URLs structurally cannot compress well.
+    #
+    # The user_avatar_url_field_optional gives the server sole
+    # discretion in deciding for which users we want to send the
+    # avatar URL (Which saves clients an RTT at the cost of some
+    # bandwidth).  At present, the server looks at `long_term_idle` to
+    # decide which users to include avatars for, piggy-backing on a
+    # different optimization for organizations with 10,000s of users.
+    include_avatar_url = not user_avatar_url_field_optional or not row['long_term_idle']
+    if include_avatar_url:
+        result['avatar_url'] = get_avatar_field(user_id=row['id'],
+                                                realm_id=realm.id,
+                                                email=row['delivery_email'],
+                                                avatar_source=row['avatar_source'],
+                                                avatar_version=row['avatar_version'],
+                                                medium=False,
+                                                client_gravatar=client_gravatar)
+
+    if (realm.email_address_visibility == Realm.EMAIL_ADDRESS_VISIBILITY_ADMINS and
+            acting_user.is_realm_admin):
+        result['delivery_email'] = row['delivery_email']
+
+    if is_bot:
+        result["bot_type"] = row["bot_type"]
+        if row['email'] in settings.CROSS_REALM_BOT_EMAILS:
+            result['is_cross_realm_bot'] = True
+
+        # Note that bot_owner_id can be None with legacy data.
+        result['bot_owner_id'] = row['bot_owner_id']
+    elif custom_profile_field_data is not None:
+        result['profile_data'] = custom_profile_field_data
+    return result
 def format_user_row(realm: Realm, acting_user: UserProfile, row: Dict[str, Any],
                     client_gravatar: bool, user_avatar_url_field_optional: bool,
                     custom_profile_field_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -440,6 +510,27 @@ def get_custom_profile_field_values(custom_profile_field_values:
                 "value": profile_field.value,
             }
     return profiles_by_user_id
+# This function is a replica of get_raw_user_data(), only difference is it will give filtered user as a result.
+def get_filtered_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Optional[UserProfile]=None,
+                      client_gravatar: bool, user_avatar_url_field_optional: bool,
+                      include_custom_profile_fields: bool=True) -> Dict[int, Dict[str, str]]:
+
+    profiles_by_user_id = None
+    custom_profile_field_data = None
+    filtered_user_dicts = get_realm_filtered_user_dicts(realm.id)
+
+    result = {}
+    for row in filtered_user_dicts :
+        result[row['id']] = format_filtered_user_row(realm,
+                                            acting_user=acting_user,
+                                            row=row,
+                                            client_gravatar=client_gravatar,
+                                            user_avatar_url_field_optional=user_avatar_url_field_optional,
+                                            custom_profile_field_data=custom_profile_field_data,
+                                            )
+    print("--------------> This is our filtered_users")
+    print(result)
+    return result
 
 def get_raw_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Optional[UserProfile]=None,
                       client_gravatar: bool, user_avatar_url_field_optional: bool,
@@ -465,6 +556,7 @@ def get_raw_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Op
         # TODO: Consider optimizing this query away with caching.
         if target_user is not None:
             custom_profile_field_values = base_query.filter(user_profile=target_user)
+            print("----------------- > target user is passed",target_user)
         else:
             custom_profile_field_values = base_query.filter(field__realm_id=realm.id)
         profiles_by_user_id = get_custom_profile_field_values(custom_profile_field_values)
@@ -481,4 +573,13 @@ def get_raw_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Op
                                             user_avatar_url_field_optional=user_avatar_url_field_optional,
                                             custom_profile_field_data=custom_profile_field_data,
                                             )
+    print(" -----------------------> Yes i have custom fields")
+    print(custom_profile_field_data)    
+    print("---------------> This is the result of get_raw_user_data ----------->")
+    print(result)
+
+    print("----------------------------objects---------------------")
+    print(UserProfile.objects.all())
+    print("----------------------------buddy_objects---------------------")
+    print(UserProfile.buddy_objects.all())
     return result

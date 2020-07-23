@@ -43,7 +43,7 @@ from zerver.lib.topic import TOPIC_NAME
 from zerver.lib.topic_mutes import get_topic_mutes
 from zerver.lib.user_groups import user_groups_in_realm_serialized
 from zerver.lib.user_status import get_user_info_dict
-from zerver.lib.users import get_cross_realm_dicts, get_raw_user_data, is_administrator_role
+from zerver.lib.users import get_cross_realm_dicts, get_raw_user_data, is_administrator_role, get_filtered_user_data
 from zerver.models import (
     Client,
     CustomProfileField,
@@ -200,6 +200,38 @@ def fetch_initial_state_data(user_profile: UserProfile,
 
     if want('realm_user_groups'):
         state['realm_user_groups'] = user_groups_in_realm_serialized(realm)
+
+    if want('realm_filtered_user'):
+        state['filtered_users'] = get_filtered_user_data(realm, user_profile,
+                                               client_gravatar=client_gravatar,
+                                               user_avatar_url_field_optional=user_avatar_url_field_optional)
+        # For the user's own avatar URL, we force
+        # client_gravatar=False, since that saves some unnecessary
+        # client-side code for handing medium-size avatars.  See #8253
+        # for details.
+        state['avatar_source'] = user_profile.avatar_source
+        state['avatar_url_medium'] = avatar_url(
+            user_profile,
+            medium=True,
+            client_gravatar=False,
+        )
+        state['avatar_url'] = avatar_url(
+            user_profile,
+            medium=False,
+            client_gravatar=False,
+        )
+
+        state['can_create_streams'] = user_profile.can_create_streams()
+        state['can_subscribe_other_users'] = user_profile.can_subscribe_other_users()
+        state['cross_realm_bots'] = list(get_cross_realm_dicts())
+        state['is_admin'] = user_profile.is_realm_admin
+        state['is_owner'] = user_profile.is_realm_owner
+        state['is_guest'] = user_profile.is_guest
+        state['user_id'] = user_profile.id
+        state['enter_sends'] = user_profile.enter_sends
+        state['email'] = user_profile.email
+        state['delivery_email'] = user_profile.delivery_email
+        state['full_name'] = user_profile.full_name
 
     if want('realm_user'):
         state['raw_users'] = get_raw_user_data(realm, user_profile,

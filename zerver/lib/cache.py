@@ -479,6 +479,9 @@ realm_user_dict_fields: List[str] = [
     'bot_type', 'long_term_idle'
 ]
 
+def realm_filtered_user_dicts_cache_key(realm_id: int) -> str:
+    return f"realm_filtered_user_dicts:{realm_id}"
+
 def realm_user_dicts_cache_key(realm_id: int) -> str:
     return f"realm_user_dicts:{realm_id}"
 
@@ -561,6 +564,10 @@ def flush_user_profile(sender: Any, **kwargs: Any) -> None:
     if changed(kwargs, realm_user_dict_fields):
         cache_delete(realm_user_dicts_cache_key(user_profile.realm_id))
 
+    # If a user_profile objects is saved, we must also flush filtered user dict cache
+    if changed(kwargs, realm_user_dict_fields):
+        cache_delete(realm_filtered_user_dicts_cache_key(user_profile.realm_id))
+
     if changed(kwargs, ['is_active']):
         cache_delete(active_user_ids_cache_key(user_profile.realm_id))
         cache_delete(active_non_guest_user_ids_cache_key(user_profile.realm_id))
@@ -587,6 +594,8 @@ def flush_realm(sender: Any, **kwargs: Any) -> None:
     if realm.deactivated or (kwargs["update_fields"] is not None and
                              "string_id" in kwargs['update_fields']):
         cache_delete(realm_user_dicts_cache_key(realm.id))
+        # while flushing realm, we must also flush the filtered user dict cache, just like any other cache.
+        cache_delete(realm_filtered_user_dicts_cache_key(realm.id))
         cache_delete(active_user_ids_cache_key(realm.id))
         cache_delete(bot_dicts_in_realm_cache_key(realm))
         cache_delete(realm_alert_words_cache_key(realm))

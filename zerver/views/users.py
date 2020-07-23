@@ -49,7 +49,7 @@ from zerver.lib.users import (
     check_valid_bot_type,
     check_valid_interface_type,
     get_api_key,
-    get_raw_user_data,
+    get_filtered_user_data,
     validate_user_custom_profile_data,
 )
 from zerver.lib.utils import generate_api_key
@@ -471,7 +471,7 @@ def get_members_backend(request: HttpRequest, user_profile: UserProfile, user_id
         target_user = access_user_by_id(user_profile, user_id, allow_deactivated=True,
                                         allow_bots=True, read_only=True)
 
-    members = get_raw_user_data(realm, user_profile, target_user=target_user,
+    members = get_filtered_user_data(realm, user_profile, target_user=target_user,
                                 client_gravatar=client_gravatar,
                                 user_avatar_url_field_optional=False,
                                 include_custom_profile_fields=include_custom_profile_fields)

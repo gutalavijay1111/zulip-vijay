@@ -828,6 +828,11 @@ class Recipient(models.Model):
         display_recipient = get_display_recipient(self)
         return f"<Recipient: {display_recipient} ({self.type_id}, {self.type})>"
 
+# ----> Manager for buddy_list
+class BuddyListManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(full_name__startswith='P')
+
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     MAX_NAME_LENGTH = 100
@@ -1086,7 +1091,7 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     zoom_token: Optional[object] = JSONField(default=None, null=True)
 
     objects: UserManager = UserManager()
-
+    buddy_objects = BuddyListManager()
     # Define the types of the various automatically managed properties
     property_types = dict(
         color_scheme=int,
@@ -2355,7 +2360,7 @@ def get_user_by_id_in_realm_including_cross_realm(
 
 @cache_with_key(realm_user_dicts_cache_key, timeout=3600*24*7)
 def get_realm_user_dicts(realm_id: int) -> List[Dict[str, Any]]:
-    return UserProfile.objects.filter(
+    return UserProfile.buddy_objects.filter(
         realm_id=realm_id,
     ).values(*realm_user_dict_fields)
 

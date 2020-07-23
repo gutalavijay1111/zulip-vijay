@@ -1,5 +1,6 @@
 import calendar
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -324,6 +325,25 @@ def home_real(request: HttpRequest) -> HttpResponse:
 
     navbar_logo_url = compute_navbar_logo_url(page_params)
 
+    # print("----------------->")
+    # new_realm_users = []
+    # user_initial = user_profile.full_name[0]
+    # pattern = '^{}'.format(user_initial)
+
+    # for _ in range(len(page_params['realm_users'])):
+    #     current_user_fullname = page_params['realm_users'][_]['full_name']
+    #     initials_matched_user = re.match(pattern,current_user_fullname)
+    #     if initials_matched_user:
+    #         new_realm_users.append(page_params['realm_users'][_])
+
+
+    # page_params['realm_users'] = new_realm_users
+    # print(page_params['realm_users'])
+    # print('\n')
+
+    # print(page_params.keys())
+    # print("-----------------> UserProfile objects")
+    # print(UserProfile.objects.all())
     response = render(request, 'zerver/app/index.html',
                       context={'user_profile': user_profile,
                                'page_params': page_params,

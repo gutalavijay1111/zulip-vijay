@@ -455,7 +455,10 @@ def get_raw_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Op
     if target_user is not None:
         user_dicts = [user_profile_to_user_row(target_user)]
     else:
+        print("-------------> get_realm_user_dict() will be called...")
         user_dicts = get_realm_user_dicts(realm.id)
+        print("this is user_dicts -------------->")
+        print(user_dicts)
 
     if include_custom_profile_fields:
         base_query = CustomProfileFieldValue.objects.select_related("field")

@@ -973,6 +973,28 @@ def post_process_state(user_profile: UserProfile, ret: Dict[str, Any],
 
         del ret['raw_users']
 
+    if 'realm_filtered_user' in ret:
+        user_dicts = list(ret['realm_filtered_user'].values())
+        user_dicts = sorted(user_dicts, key=lambda x: x['user_id'])
+
+        ret['filtered_users'] = [d for d in user_dicts if d['is_active']]
+        ret['realm_non_active_users'] = [d for d in user_dicts if not d['is_active']]
+
+        '''
+        Be aware that we do intentional aliasing in the below code.
+        We can now safely remove the `is_active` field from all the
+        dicts that got partitioned into the two lists above.
+
+        We remove the field because it's already implied, and sending
+        it to clients makes clients prone to bugs where they "trust"
+        the field but don't actually update in live updates.  It also
+        wastes bandwidth.
+        '''
+        for d in user_dicts:
+            d.pop('is_active')
+
+        del ret['realm_filtered_user']
+
     if 'raw_recent_private_conversations' in ret:
         # Reformat recent_private_conversations to be a list of dictionaries, rather than a dict.
         ret['recent_private_conversations'] = sorted([

@@ -519,17 +519,30 @@ def get_filtered_user_data(realm: Realm, acting_user: UserProfile, *, target_use
     custom_profile_field_data = None
     filtered_user_dicts = get_realm_filtered_user_dicts(realm.id)
 
+    if include_custom_profile_fields:
+        base_query = CustomProfileFieldValue.objects.select_related("field")
+        custom_profile_field_values = base_query.filter(field__realm_id=realm.id)
+        profiles_by_user_id = get_custom_profile_field_values(custom_profile_field_values)
+
     result = {}
+    count = 0
     for row in filtered_user_dicts :
-        result[row['id']] = format_filtered_user_row(realm,
+        if profiles_by_user_id is not None:
+            custom_profile_field_data = profiles_by_user_id.get(row['id'], {})
+
+        result[count] = format_user_row(realm,
                                             acting_user=acting_user,
                                             row=row,
                                             client_gravatar=client_gravatar,
                                             user_avatar_url_field_optional=user_avatar_url_field_optional,
                                             custom_profile_field_data=custom_profile_field_data,
                                             )
-    print("--------------> This is our filtered_users")
-    print(result)
+        count += 1
+
+    # print("########## |  This is our filtered_users | #########")
+    # print(result)
+    # print("############## |  Filtered_user_dict | ##########")
+    # print(filtered_user_dicts)
     return result
 
 def get_raw_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Optional[UserProfile]=None,
@@ -577,7 +590,8 @@ def get_raw_user_data(realm: Realm, acting_user: UserProfile, *, target_user: Op
     print(custom_profile_field_data)    
     print("---------------> This is the result of get_raw_user_data ----------->")
     print(result)
-
+    print("----------------------> raw_use_dict")
+    print(user_dicts)
     print("----------------------------objects---------------------")
     print(UserProfile.objects.all())
     print("----------------------------buddy_objects---------------------")

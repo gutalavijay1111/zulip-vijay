@@ -396,7 +396,7 @@ exports.initialize_everything = function () {
 
     const bot_params = pop_fields("realm_bots");
 
-    const people_params = pop_fields("realm_users", "realm_non_active_users", "cross_realm_bots");
+    const people_params = pop_fields("realm_users", "realm_non_active_users", "cross_realm_bots","filtered_users");
 
     const pm_conversations_params = pop_fields("recent_private_conversations");
 

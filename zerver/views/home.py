@@ -365,6 +365,13 @@ def home_real(request: HttpRequest) -> HttpResponse:
                                'max_file_upload_size_mib': settings.MAX_FILE_UPLOAD_SIZE,
                                })
     patch_cache_control(response, no_cache=True, no_store=True, must_revalidate=True)
+    # print("########################### | These are page_params keys | ##############")
+    # print(page_params.keys())
+    # print("########################### | Realm Users | #############################")
+    # print(page_params['realm_users'])
+    # print("############################ | Presences |############################")
+    # print("\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+    # print(page_params['presences'])
     return response
 
 @zulip_login_required

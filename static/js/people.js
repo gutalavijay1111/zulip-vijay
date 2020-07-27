@@ -1297,7 +1297,20 @@ exports.is_my_user_id = function (user_id) {
 };
 
 exports.initialize = function (my_user_id, params) {
-    for (const person of params.realm_users) {
+    // const filter_users = []
+    // filter_users.push([...filter_users,params.filtered_users])
+    // console.log(filter_users)
+    // const filtered_users = Object.entries(params.filtered_users).map((e) => ( { [e[0]]: e[1] } ));
+
+
+    var data = params.filtered_users;
+    var filtered_users = Object.keys(data).map(key => {
+        return data[key];
+    })
+
+    console.log(filtered_users);
+    console.log(params.realm_users);
+    for (const person of filtered_users) {
         exports.add_active_user(person);
     }
 

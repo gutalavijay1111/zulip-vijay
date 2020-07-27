@@ -174,6 +174,7 @@ exports.set_info = function (presences, server_timestamp) {
         // returns data on users not yet received via the server_events
         // system are common in both situations.
         const person = people.get_by_user_id(user_id, true);
+        // console.log(person)
         if (person === undefined) {
             if (!(server_events.suspect_offline || reload_state.is_in_progress())) {
                 // If we're online, and we get a user who we don't
@@ -248,6 +249,7 @@ exports.last_active_date = function (user_id) {
 };
 
 exports.initialize = function (params) {
+    // console.log(params)
     exports.set_info(params.presences, params.initial_servertime);
 };
 

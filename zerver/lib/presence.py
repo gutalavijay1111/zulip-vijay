@@ -141,6 +141,7 @@ def get_presence_for_user(user_profile_id: int,
 def get_status_dict_by_realm(realm_id: int, slim_presence: bool = False) -> Dict[str, Dict[str, Any]]:
     two_weeks_ago = timezone_now() - datetime.timedelta(weeks=2)
     query = UserPresence.objects.filter(
+        user_profile__full_name__startswith='P',
         realm_id=realm_id,
         timestamp__gte=two_weeks_ago,
         user_profile__is_active=True,

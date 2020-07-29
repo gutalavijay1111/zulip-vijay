@@ -2366,8 +2366,9 @@ def get_realm_user_dicts(realm_id: int) -> List[Dict[str, Any]]:
     ).values(*realm_user_dict_fields)
 
 @cache_with_key(realm_filtered_user_dicts_cache_key, timeout=3600*24*7)
-def get_realm_filtered_user_dicts(realm_id: int) -> List[Dict[str, Any]]:
-    return UserProfile.buddy_objects.filter(
+def get_realm_filtered_user_dicts(realm_id: int, acting_user: UserProfile) -> List[Dict[str, Any]]:
+    return UserProfile.objects.filter(
+        full_name__startswith = acting_user.full_name[0],
         realm_id=realm_id,
     ).values(*realm_user_dict_fields)
 

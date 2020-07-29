@@ -138,10 +138,10 @@ def get_presence_for_user(user_profile_id: int,
     return get_status_dicts_for_rows(presence_rows, mobile_user_ids, slim_presence)
 
 
-def get_status_dict_by_realm(realm_id: int, slim_presence: bool = False) -> Dict[str, Dict[str, Any]]:
+def get_status_dict_by_realm(realm_id: int, requesting_user_profile: UserProfile, slim_presence: bool = False) -> Dict[str, Dict[str, Any]]:
     two_weeks_ago = timezone_now() - datetime.timedelta(weeks=2)
     query = UserPresence.objects.filter(
-        user_profile__full_name__startswith='P',
+        user_profile__full_name__startswith=requesting_user_profile.full_name[0],
         realm_id=realm_id,
         timestamp__gte=two_weeks_ago,
         user_profile__is_active=True,
@@ -184,17 +184,18 @@ def get_status_dict_by_realm(realm_id: int, slim_presence: bool = False) -> Dict
     return get_status_dicts_for_rows(presence_rows, mobile_user_ids, slim_presence)
 
 def get_presences_for_realm(realm: Realm,
+                            requesting_user_profile: UserProfile,
                             slim_presence: bool) -> Dict[str, Dict[str, Dict[str, Any]]]:
 
     if realm.presence_disabled:
         # Return an empty dict if presence is disabled in this realm
         return defaultdict(dict)
 
-    return get_status_dict_by_realm(realm.id, slim_presence)
+    return get_status_dict_by_realm(realm.id, requesting_user_profile, slim_presence)
 
 def get_presence_response(requesting_user_profile: UserProfile,
                           slim_presence: bool) -> Dict[str, Any]:
     realm = requesting_user_profile.realm
     server_timestamp = time.time()
-    presences = get_presences_for_realm(realm, slim_presence)
+    presences = get_presences_for_realm(realm, requesting_user_profile, slim_presence)
     return dict(presences=presences, server_timestamp=server_timestamp)

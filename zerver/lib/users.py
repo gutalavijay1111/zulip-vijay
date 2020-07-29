@@ -517,7 +517,7 @@ def get_filtered_user_data(realm: Realm, acting_user: UserProfile, *, target_use
 
     profiles_by_user_id = None
     custom_profile_field_data = None
-    filtered_user_dicts = get_realm_filtered_user_dicts(realm.id)
+    filtered_user_dicts = get_realm_filtered_user_dicts(realm.id, acting_user)
 
     if include_custom_profile_fields:
         base_query = CustomProfileFieldValue.objects.select_related("field")

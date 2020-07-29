@@ -479,7 +479,7 @@ realm_user_dict_fields: List[str] = [
     'bot_type', 'long_term_idle'
 ]
 
-def realm_filtered_user_dicts_cache_key(realm_id: int) -> str:
+def realm_filtered_user_dicts_cache_key(realm_id: int, acting_user) -> str:
     return f"realm_filtered_user_dicts:{realm_id}"
 
 def realm_user_dicts_cache_key(realm_id: int) -> str:

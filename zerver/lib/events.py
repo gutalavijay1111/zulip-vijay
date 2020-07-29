@@ -129,7 +129,7 @@ def fetch_initial_state_data(user_profile: UserProfile,
         state['muted_topics'] = get_topic_mutes(user_profile)
 
     if want('presence'):
-        state['presences'] = get_presences_for_realm(realm, slim_presence)
+        state['presences'] = get_presences_for_realm(realm, user_profile, slim_presence)
 
     if want('realm'):
         for property_name in Realm.property_types:
